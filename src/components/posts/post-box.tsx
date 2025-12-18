@@ -25,7 +25,7 @@ import { CommentIcon } from "../icons";
 import { twMerge } from "tailwind-merge";
 import { createPostSchema } from "@/validation/post-schema";
 import { Post } from "@/models/Post";
-import { getReferenceField } from "@/lib/utils";
+import { getReferenceField, timeAgo } from "@/lib/utils";
 import { getEmojiFromText } from "@/lib/emoji-from-text";
 import { Reference } from "@/types";
 import { User } from "@/models/User";
@@ -123,7 +123,7 @@ export const PostBoxView = ({
   // Get the other fields from the post data
   const avatar = getReferenceField(owner, (user) => user.avatarUrl, "");
   const username = getReferenceField(owner, (user) => user.username, "");
-  const timestamp = "just now";
+  const timestamp = timeAgo(createdAt);
 
   // Check if current user is the owner
   const ownerId = getOwnerId(owner);
