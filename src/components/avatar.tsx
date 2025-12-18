@@ -99,13 +99,13 @@ export default function Avatar({
       aria-label={altText}
     >
       {src ? (
-        <Image
+        <img
           src={src}
           alt={altText}
           width={size}
           height={size}
           className="object-cover w-full h-full"
-          unoptimized={src.startsWith("data:") || src.startsWith("blob:")}
+          // unoptimized={src.startsWith("data:") || src.startsWith("blob:")}
         />
       ) : (
         <div
