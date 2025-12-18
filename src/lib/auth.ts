@@ -53,6 +53,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           email: user.email,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          avatarUrl: user.avatarUrl ?? "",
         };
       },
     }),
@@ -91,6 +92,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       if (user) {
         session.user = {
           name: user?.username,
+          avatarUrl: user?.avatarUrl ?? "",
           id: user?._id.toString(),
           emailVerified: new Date(),
           username: user?.username,
@@ -110,6 +112,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         email: t.email,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
+        avatarUrl: t?.avatarUrl ?? "",
         emailVerified: new Date(),
       };
 

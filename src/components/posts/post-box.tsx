@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useSession } from "next-auth/react";
+import AuthModal from "@/components/authentication/auth-modal";
+
 /**
  * There are certain sections in te post box.
  * - Header:
@@ -20,19 +24,13 @@ import { useState } from "react";
 import Avatar from "../avatar";
 import { CommentIcon } from "../icons";
 import { twMerge } from "tailwind-merge";
-
-export interface Post {
-  _id: string;
-  avatar: string;
-  username: string;
-  timestamp: string;
-  createdAt: string;
-  updatedAt: string;
-  feelingEmoji: string;
-  postContent: string;
-}
+import { createPostSchema } from "@/validation/post-schema";
+import { Post } from "@/models/Post";
+import { getReferenceField } from "@/lib/utils";
+import { debounce, getEmojiFromText } from "@/lib/emoji-from-text";
 
 const BasePostBox = ({
+  id,
   header,
   actions,
   actionAlignment = "left",
@@ -41,6 +39,7 @@ const BasePostBox = ({
   content,
   onContentChange,
 }: {
+  id: string;
   header?: React.ReactNode;
   actions?: React.ReactNode;
   feelingEmoji?: string;
@@ -73,7 +72,7 @@ const BasePostBox = ({
           onChange={(e) => onContentChange?.(e.target.value)}
           placeholder={editable ? "How are you feeling today?" : "No content"}
           name="content"
-          id={"post-box-content-textarea-" + Math.random().toString(36)}
+          id={"post-box-content-textarea-" + id}
         />
       </div>
 
@@ -93,13 +92,11 @@ const BasePostBox = ({
 export const PostBoxView = ({
   _id,
   editable = false,
-  avatar,
-  username,
-  timestamp,
+  content: postContent,
+  owner,
   createdAt,
   updatedAt,
   feelingEmoji,
-  postContent,
 }: Post & { editable?: boolean }) => {
   // Let's use the state variable to edit it later on
   const [content, setContent] = useState(postContent);
@@ -107,8 +104,14 @@ export const PostBoxView = ({
   // If the two dates are not the same, then the post is edited
   const edited = updatedAt !== createdAt;
 
+  // Get the other fields from the post data
+  const avatar = getReferenceField(owner, (user) => user.avatarUrl, "");
+  const username = getReferenceField(owner, (user) => user.username, "");
+  const timestamp = "just now";
+
   return (
     <BasePostBox
+      id={_id}
       header={
         <>
           {/* Left side contains avatar + username + timestamp + edited/not-edited */}
@@ -165,41 +168,159 @@ export const PostBoxView = ({
   );
 };
 
-export const PostBoxCreate = ({}: {}) => {
-  const [content, setContent] = useState("");
+export const PostBoxCreate = ({
+  onRequestCreate,
+  onRequestSuccess,
+  onRequestError,
+}: {
+  // We want to notify the parent component that we want to create a new post, so it can reflect it on the list
+  onRequestCreate: (post: Post) => void;
 
-  const handleSubmit = () => {
-    console.log("SUBMITTTED - ", content);
-  }
+  // If the post is created successfully,
+  onRequestSuccess: (post: Post) => void;
+
+  // If there was some error, notify the parent component so it can remove it from the list
+  onRequestError: (id: string, error: string) => void;
+}) => {
+  const { data: session, status } = useSession();
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [feelingEmoji, setFeelingEmoji] = useState("💭");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (status === "unauthenticated" || !session) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // Clear previous errors
+    setError(null);
+
+    // Validate using Zod schema
+    const result = createPostSchema.safeParse({ content });
+
+    if (!result.success) {
+      // Get the first error message
+      const firstError = result.error.issues[0];
+      setError(firstError.message);
+      return;
+    }
+
+    // The post is good to create, so notify the parent component
+    const id = uuidv4();
+    onRequestCreate({
+      _id: id,
+      content: content,
+      owner: "",
+      isDelete: false,
+      feelingEmoji: feelingEmoji,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Validation passed, proceed with submission
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/v1/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content, feelingEmoji }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Handle API error - notify parent to remove optimistic post
+        const errorMessage = data.error || "Failed to create post";
+        setError(errorMessage);
+        onRequestError(id, errorMessage);
+        return;
+      }
+      // Success - clear content
+      setContent("");
+      // use a callback prop to notify parent component
+      onRequestSuccess(data.data);
+    } catch (err) {
+      // Handle network or other errors - notify parent to remove optimistic post
+      const errorMessage = "Network error. Please try again.";
+      setError(errorMessage);
+      console.error("Error creating post:", err);
+      onRequestError(id, errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Get the emoji from the text
+  useEffect(() => {
+    const emoji = getEmojiFromText(content);
+    setFeelingEmoji(emoji);
+  }, [content]);
+
+  // Close modal when user becomes authenticated
+  useEffect(() => {
+    if (status === "authenticated" && session && isAuthModalOpen) {
+      setIsAuthModalOpen(false);
+    }
+  }, [status, session, isAuthModalOpen]);
 
   return (
-    <BasePostBox
-      header={
-        <>
-          {/* Left side contains avatar + username + timestamp + edited/not-edited */}
-          <div className="post-box__header-left flex flex-row gap-4 items-center justify-between">
-            <p className="post-box__header-left-content-username text-sm text-heading font-medium">
-              Create Post
-            </p>
-          </div>
-        </>
-      }
-      actionAlignment="right"
-      actions={
-        <button className="post-box__actions flex flex-row gap-2 min-w-28 items-center justify-center bg-button-background rounded-lg p-2" onClick={handleSubmit}>
-          {/* <SendIcon
-            width={19}
-            height={16}
-          /> */}
-          {/* Showing the comment count */}
-          <span className="font-medium text-xs text-white">
-           Post
-          </span>
-        </button>
-      }
-      content={content}
-      onContentChange={setContent}
-      editable
-    />
+    <>
+      <BasePostBox
+        id="create-post-box"
+        header={
+          <>
+            {/* Left side contains avatar + username + timestamp + edited/not-edited */}
+            <div className="post-box__header-left flex flex-row gap-4 items-center justify-between">
+              <p className="post-box__header-left-content-username text-sm text-heading font-medium">
+                Create Post
+              </p>
+            </div>
+          </>
+        }
+        actionAlignment="right"
+        actions={
+          <>
+            {error && (
+              <span className="text-xs text-red-500 mr-2 flex-1">{error}</span>
+            )}
+            <button
+              className="post-box__actions flex flex-row gap-2 min-w-28 items-center justify-center bg-button-background rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {/* <SendIcon
+                width={19}
+                height={16}
+              /> */}
+              {/* Showing the comment count */}
+              <span className="font-medium text-xs text-white">
+                {isLoading ? "Posting..." : "Post"}
+              </span>
+            </button>
+          </>
+        }
+        feelingEmoji={feelingEmoji}
+        content={content}
+        onContentChange={(newContent) => {
+          setContent(newContent);
+          // Clear error when user starts typing
+          if (error) {
+            setError(null);
+          }
+        }}
+        editable
+      />
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialView="sign-in"
+      />
+    </>
   );
 };

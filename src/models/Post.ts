@@ -1,5 +1,6 @@
-import { Document } from "@/types";
+import { Document, Reference } from "@/types";
 import mongoose, { InferSchemaType, models, Schema } from "mongoose";
+import { User } from "./User";
 
 const postSchema = new Schema(
   {
@@ -28,6 +29,20 @@ const postSchema = new Schema(
 
 const Post = models.Post || mongoose.model("Post", postSchema);
 // Typeof Post schema
-export type Post = Document & InferSchemaType<typeof postSchema>;
+type RawPost = Document & InferSchemaType<typeof postSchema>;
+// Some changes to make it more feasible to work with
+export type Post = Omit<RawPost, "createdAt" | "updatedAt" | "owner"> & {
+  owner: Reference<User>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Create type for post
+export type CreatePostDTO = Omit<
+  Post,
+  "createdAt" | "updatedAt" | "isDelete"
+> & {
+  owner: string;
+};
 
 export default Post;
