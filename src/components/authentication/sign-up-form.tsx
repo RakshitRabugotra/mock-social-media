@@ -47,8 +47,7 @@ export default function SignUpForm({
       const responseData = await response.json();
 
       if (!responseData.success || !responseData.message) {
-        setError("Something went wrong, unable to register");
-        return;
+        throw new Error(responseData.error || "Something went wrong, unable to register");
       }
 
       const { data: loginData, error: loginError } = await login({
@@ -58,14 +57,12 @@ export default function SignUpForm({
 
       // If an error occurred, display it
       if (loginError) {
-        setError(loginError);
-        return;
+        throw new Error(loginError);
       }
 
       // If still no login data, then something went wrong
       if (!loginData) {
-        setError("Something went wrong. Please try again.");
-        return;
+        throw new Error("Something went wrong. Please try again.");
       }
 
       // Force refresh client session

@@ -25,17 +25,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           $or: [{ email: credentials.identifier }, { username: credentials.identifier }],
           isDelete: false,
         });
+
         // Then if the user doesn't exist
         if (!user) throw "User doesn't exist, try signing up";
-
-        // If the user doesn't have a password, but have a provider
-        if (!user?.password && user?.accounts?.length) {
-          // Then return the Error saying to login with the particular provider
-          const providers = user?.accounts
-            ?.map((ac: any) => ac.provider)
-            .join(", ");
-          throw "No credentials found, try logging in with " + providers;
-        }
 
         // lets check, for password match
         const passMatch = await bcrypt.compare(

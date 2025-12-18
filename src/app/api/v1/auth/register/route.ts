@@ -41,8 +41,14 @@ export async function POST(request: NextRequest) {
 
     // BAD REQUEST IF EMAIL ALREADY IN USER
     if (user) {
+      // Check how does it match
+      const errorMessage =
+        user.email === email
+          ? "Email already in use"
+          : "Username already in use";
+
       return NextResponse.json(
-        { message: "Email already in use" },
+        { message: "Error", error: errorMessage },
         { status: 400 }
       );
     }
