@@ -5,14 +5,15 @@ import { PostsSkeleton } from "./post-section";
 
 const getPosts = async () => {
   const response = await fetch("/api/v1/posts");
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      errorData.message || `Failed to fetch posts: ${response.status} ${response.statusText}`
+      errorData.message ||
+        `Failed to fetch posts: ${response.status} ${response.statusText}`
     );
   }
-  
+
   const data = await response.json();
   const posts: Post[] = data.data;
   return posts;
@@ -22,26 +23,60 @@ const getPosts = async () => {
  * The posts lists section
  * Async component that awaits the posts
  */
-export const PostsList = () => {
+export const PostsList = ({
+  onRefresh,
+  refreshIntervalSeconds = 10,
+}: {
+  onRefresh: () => void;
+  refreshIntervalSeconds?: number;
+}) => {
   const [posts, setPosts] = useState<Post[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    getPosts()
-      .then((posts) => {
-        setPosts(posts);
-      })
-      .catch((error) => {
-        console.error("Error fetching posts:", error);
-        setError(error instanceof Error ? error.message : "Failed to fetch posts");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+    const refreshPosts = async () => {
+      // Get the latest post
+      const latestPosts = await getPosts();
+      if (!latestPosts) return setError("Error communicating with server");
+
+      // Set the post
+      setPosts(latestPosts);
+      setLoading(false);
+      // On refresh
+      onRefresh();
+    };
+
+    if (!posts) {
+      refreshPosts();
+    }
+
+    let interval = setInterval(async () => {
+      refreshPosts();
+    }, refreshIntervalSeconds * 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [posts]);
+
+  // useEffect(() => {
+  //   setLoading(true);
+  //   getPosts()
+  //     .then((posts) => {
+  //       setPosts(posts);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching posts:", error);
+  //       setError(
+  //         error instanceof Error ? error.message : "Failed to fetch posts"
+  //       );
+  //     })
+  //     .finally(() => {
+  //       setLoading(false);
+  //     });
+  // }, []);
 
   if (loading) {
     return <PostsSkeleton />;
@@ -50,7 +85,9 @@ export const PostsList = () => {
   if (error) {
     return (
       <div className="max-w-full rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
-        <p className="max-w-full text-sm text-red-800 dark:text-red-200">{error}</p>
+        <p className="max-w-full text-sm text-red-800 dark:text-red-200">
+          {error}
+        </p>
         <button
           onClick={() => {
             setError(null);
@@ -61,7 +98,11 @@ export const PostsList = () => {
               })
               .catch((error) => {
                 console.error("Error fetching posts:", error);
-                setError(error instanceof Error ? error.message : "Failed to fetch posts");
+                setError(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to fetch posts"
+                );
               })
               .finally(() => {
                 setLoading(false);

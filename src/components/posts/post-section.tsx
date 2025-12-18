@@ -90,6 +90,11 @@ export const PostSection = () => {
     setOptimisticPosts((prev) => prev.filter((p) => p._id !== id));
   };
 
+  // Clear the optimistic posts as we're refreshing the posts
+  const clearOptimisticPosts = () => {
+    setOptimisticPosts([]);
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full">
       <PostBoxCreate
@@ -104,7 +109,7 @@ export const PostSection = () => {
       ))}
 
       {/* Posts with Suspense boundary */}
-      <PostsList />
+      <PostsList onRefresh={clearOptimisticPosts} />
     </div>
   );
 };
