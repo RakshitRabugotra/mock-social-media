@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // And then query and see if the user already exists with the given email
-    let user = await User.findOne({ email });
+    let user = await User.findOne({
+      $or: [{ email }, { username }],
+    });
 
     // BAD REQUEST IF EMAIL ALREADY IN USER
     if (user) {

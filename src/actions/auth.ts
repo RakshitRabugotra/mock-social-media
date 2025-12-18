@@ -4,7 +4,7 @@
 import { signIn, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
-export const login = async (credData: { email: string; password: string }) => {
+export const login = async (credData: { identifier: string; password: string }) => {
   const result: { data: any | null; error: string | null } = {
     data: null,
     error: null,

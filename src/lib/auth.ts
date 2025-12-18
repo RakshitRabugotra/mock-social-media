@@ -14,7 +14,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: {},
+        identifier: {},
         password: {},
       },
       async authorize(credentials) {
@@ -22,7 +22,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         await connectDB();
         // Query in the Users collection
         const user = await User.findOne({
-          email: credentials.email,
+          $or: [{ email: credentials.identifier }, { username: credentials.identifier }],
           isDelete: false,
         });
         // Then if the user doesn't exist
