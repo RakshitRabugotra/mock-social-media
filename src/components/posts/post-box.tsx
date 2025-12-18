@@ -49,31 +49,49 @@ const BasePostBox = ({
   content?: string;
   onContentChange?: (content: string) => void;
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const autoResize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    el.style.height = "auto"; // reset
+    el.style.height = `${el.scrollHeight}px`; // grow
+  };
+
+  // Resize on mount + when content changes from outside
+  useEffect(() => {
+    autoResize();
+  }, [content]);
+
   return (
     <section className="font-inter post-box__container bg-card-background p-4 border-2 border-border rounded-lg shadow-sm shadow-border focus-within:border-muted">
       {/* Header */}
       <div className="post-box__header flex flex-row justify-between items-center">
-        {/* Left side contains avatar + username + timestamp + edited/not-edited */}
         {header}
       </div>
 
-      {/* The main content */}
+      {/* Content */}
       <div className="post-box__content flex flex-row justify-between items-start bg-card-content-background rounded-lg p-4 mt-4 gap-4">
-        {/* Contains an emoji on the left side */}
         <div className="post-box__content-emoji">
           <p className="post-box__content-emoji-text rounded-full text-sm p-2 bg-emoji-background size-10 flex items-center justify-center">
             {feelingEmoji}
           </p>
         </div>
-        {/* Right container taking the majority of width contains the post content */}
+
         <textarea
-          className="post-box__content-right-text text-shadow-white font-normal text-sm text-muted leading-tight w-full cursor-text focus:outline-none"
+          ref={textareaRef}
+          className="post-box__content-right-text text-shadow-white font-normal text-sm text-muted leading-tight w-full cursor-text focus:outline-none resize-none overflow-hidden"
           value={content}
           disabled={!editable}
-          onChange={(e) => onContentChange?.(e.target.value)}
+          onChange={(e) => {
+            onContentChange?.(e.target.value);
+            autoResize();
+          }}
           placeholder={editable ? "How are you feeling today?" : "No content"}
           name="content"
-          id={"post-box-content-textarea-" + id}
+          id={`post-box-content-textarea-${id}`}
+          rows={1}
         />
       </div>
 
@@ -89,6 +107,8 @@ const BasePostBox = ({
     </section>
   );
 };
+
+export default BasePostBox;
 
 // Helper function to get owner ID from Reference
 const getOwnerId = (owner: Reference<User>): string => {
@@ -237,7 +257,8 @@ export const PostBoxView = ({
               Delete Post
             </h3>
             <p className="text-sm text-muted mb-6">
-              Are you sure you want to delete this post? This action cannot be undone.
+              Are you sure you want to delete this post? This action cannot be
+              undone.
             </p>
             <div className="flex flex-row gap-2 justify-end">
               <button
@@ -261,105 +282,105 @@ export const PostBoxView = ({
       <BasePostBox
         id={_id}
         header={
-        <>
-          {/* Left side contains avatar + username + timestamp + edited/not-edited */}
-          <div className="post-box__header-left flex flex-row gap-4 items-center justify-between">
-            <Avatar
-              src={avatar}
-              name={username}
-              className="aspect-square size-12"
-            />
+          <>
+            {/* Left side contains avatar + username + timestamp + edited/not-edited */}
+            <div className="post-box__header-left flex flex-row gap-4 items-center justify-between">
+              <Avatar
+                src={avatar}
+                name={username}
+                className="aspect-square size-12"
+              />
 
-            <div className="flex flex-col">
-              <p className="post-box__header-left-content-username text-sm text-heading font-medium">
-                {username}
-              </p>
-
-              <span className="text-xs text-muted font-medium">
-                <p className="post-box__header-left-content-timestamp inline-block">
-                  {timestamp}
+              <div className="flex flex-col">
+                <p className="post-box__header-left-content-username text-sm text-heading font-medium">
+                  {username}
                 </p>
-                {edited && (
-                  <p className="post-box__header-left-content-edited inline-block">
-                    &nbsp;&bull;&nbsp;Edited
+
+                <span className="text-xs text-muted font-medium">
+                  <p className="post-box__header-left-content-timestamp inline-block">
+                    {timestamp}
                   </p>
+                  {edited && (
+                    <p className="post-box__header-left-content-edited inline-block">
+                      &nbsp;&bull;&nbsp;Edited
+                    </p>
+                  )}
+                </span>
+              </div>
+            </div>
+            {/* Right side contains actions (like edit, delete if the user is the owner of the post) */}
+            {isOwner && (
+              <div className="post-box__header-right relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="post-box__header-right-action group-hover:bg-white rounded-sm aspect-square size-5 group-hover:text-black transition-colors duration-200"
+                >
+                  &middot;&middot;&middot;
+                </button>
+                {showMenu && (
+                  <div className="absolute right-0 top-6 bg-card-background border-2 border-border rounded-lg shadow-lg z-10 min-w-32">
+                    <button
+                      onClick={handleEdit}
+                      className="w-full text-left px-4 py-2 text-sm text-heading hover:bg-card-content-background transition-colors duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-card-content-background transition-colors duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 )}
-              </span>
-            </div>
-          </div>
-          {/* Right side contains actions (like edit, delete if the user is the owner of the post) */}
-          {isOwner && (
-            <div className="post-box__header-right relative" ref={menuRef}>
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="post-box__header-right-action group-hover:bg-white rounded-sm aspect-square size-5 group-hover:text-black transition-colors duration-200"
-              >
-                &middot;&middot;&middot;
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 top-6 bg-card-background border-2 border-border rounded-lg shadow-lg z-10 min-w-32">
-                  <button
-                    onClick={handleEdit}
-                    className="w-full text-left px-4 py-2 text-sm text-heading hover:bg-card-content-background transition-colors duration-200"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      setShowDeleteConfirm(true);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-card-content-background transition-colors duration-200"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      }
-      actions={
-        <>
-          {isEditing ? (
-            <div className="flex flex-row gap-2">
-              <button
-                onClick={handleCancel}
-                disabled={isSaving}
-                className="post-box__actions flex flex-row gap-2 min-w-20 items-center justify-center bg-card-background border-2 border-border rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card-content-background transition-colors duration-200"
-              >
-                <span className="font-medium text-xs text-muted">Cancel</span>
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="post-box__actions flex flex-row gap-2 min-w-20 items-center justify-center bg-button-background rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="font-medium text-xs text-white">
-                  {isSaving ? "Saving..." : "Save"}
+              </div>
+            )}
+          </>
+        }
+        actions={
+          <>
+            {isEditing ? (
+              <div className="flex flex-row gap-2">
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="post-box__actions flex flex-row gap-2 min-w-20 items-center justify-center bg-card-background border-2 border-border rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card-content-background transition-colors duration-200"
+                >
+                  <span className="font-medium text-xs text-muted">Cancel</span>
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="post-box__actions flex flex-row gap-2 min-w-20 items-center justify-center bg-button-background rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="font-medium text-xs text-white">
+                    {isSaving ? "Saving..." : "Save"}
+                  </span>
+                </button>
+              </div>
+            ) : (
+              <button className="post-box__actions flex flex-row gap-2 group">
+                <CommentIcon
+                  width={19}
+                  height={16}
+                  className="group-hover:underline group-hover:stroke-white transition-colors duration-200"
+                />
+                {/* Showing the comment count */}
+                <span className="font-medium text-xs text-muted group-hover:underline group-hover:text-white transition-colors duration-200">
+                  24 Comments
                 </span>
               </button>
-            </div>
-          ) : (
-            <button className="post-box__actions flex flex-row gap-2 group">
-              <CommentIcon
-                width={19}
-                height={16}
-                className="group-hover:underline group-hover:stroke-white transition-colors duration-200"
-              />
-              {/* Showing the comment count */}
-              <span className="font-medium text-xs text-muted group-hover:underline group-hover:text-white transition-colors duration-200">
-                24 Comments
-              </span>
-            </button>
-          )}
-        </>
-      }
-      content={content}
-      feelingEmoji={feelingEmoji}
-      onContentChange={setContent}
-      editable={isEditing || editable}
-    />
+            )}
+          </>
+        }
+        content={content}
+        feelingEmoji={feelingEmoji}
+        onContentChange={setContent}
+        editable={isEditing || editable}
+      />
     </>
   );
 };
