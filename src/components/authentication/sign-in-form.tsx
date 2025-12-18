@@ -40,7 +40,7 @@ export default function SignInForm({
       setError(null);
 
       const { data: loginData, error: loginError } = await login({
-        identifier: data.email,
+        identifier: data.identifier,
         password: data.password,
       });
 
@@ -111,22 +111,22 @@ export default function SignInForm({
           )}
 
           <fieldset className="flex flex-col gap-1.5" disabled={isSubmitting}>
-            <label htmlFor="email" className="text-sm text-label">
+            <label htmlFor="identifier" className="text-sm text-label">
               Email or Username
             </label>
             <input
               type="text"
-              id="email"
-              {...register("email")}
+              id="identifier"
+              {...register("identifier")}
               placeholder="Enter your email or username"
               disabled={isSubmitting}
               className={`placeholder:text-muted rounded-md bg-transparent border px-3 py-2 outline-none focus:ring-1 focus:ring-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed ${
-                errors.email ? "border-red-500" : "border-border"
+                errors.identifier ? "border-red-500" : "border-border"
               }`}
             />
-            {errors.email && (
+            {errors.identifier && (
               <span className="text-xs text-red-500">
-                {errors.email.message}
+                {errors.identifier.message}
               </span>
             )}
           </fieldset>
