@@ -61,23 +61,6 @@ export const PostsList = ({
     };
   }, [posts]);
 
-  // useEffect(() => {
-  //   setLoading(true);
-  //   getPosts()
-  //     .then((posts) => {
-  //       setPosts(posts);
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error fetching posts:", error);
-  //       setError(
-  //         error instanceof Error ? error.message : "Failed to fetch posts"
-  //       );
-  //     })
-  //     .finally(() => {
-  //       setLoading(false);
-  //     });
-  // }, []);
-
   if (loading) {
     return <PostsSkeleton />;
   }
@@ -112,6 +95,16 @@ export const PostsList = ({
         >
           Try again
         </button>
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="max-w-full rounded-md border border-border px-6 py-8 text-center">
+        <p className="text-muted text-sm">
+          No posts yet. Be the first to share something with the community! 🎉
+        </p>
       </div>
     );
   }
