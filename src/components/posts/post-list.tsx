@@ -48,7 +48,7 @@ export const PostsList = ({
       onRefresh();
     };
 
-    if (!posts) {
+    if (!posts?.length) {
       refreshPosts();
     }
 
