@@ -52,7 +52,7 @@ export default function SignUpForm({
       }
 
       const { data: loginData, error: loginError } = await login({
-        email: data.email,
+        identifier: data.email,
         password: data.password,
       });
 
