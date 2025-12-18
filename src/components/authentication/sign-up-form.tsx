@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { EyeOpenIcon } from "@/components/icons";
+import { CloseIcon, EyeOpenIcon } from "@/components/icons";
 import { SignUpFormData, signUpSchema } from "@/validation/auth-schema";
 import { getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,9 +11,13 @@ import { login } from "@/actions/auth";
 
 interface SignUpFormProps {
   onSwitchToSignIn?: () => void;
+  onClose?: () => void;
 }
 
-export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps = {}) {
+export default function SignUpForm({
+  onSwitchToSignIn,
+  onClose,
+}: SignUpFormProps = {}) {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -31,7 +35,7 @@ export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps = {}) {
     try {
       // Clear previous errors
       setError(null);
-      
+
       // Send a request to the backend
       const response = await fetch("/api/v1/auth/register", {
         method: "POST",
@@ -41,7 +45,7 @@ export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps = {}) {
         body: JSON.stringify(data),
       });
       const responseData = await response.json();
-      
+
       if (!responseData.success || !responseData.message) {
         setError("Something went wrong, unable to register");
         return;
@@ -76,7 +80,7 @@ export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps = {}) {
       }
     } catch (error: any) {
       console.error("Error while signing up: ", error);
-      
+
       // Handle axios errors
       let errorMessage = "An unexpected error occurred. Please try again.";
       if (error?.response?.data?.message) {
@@ -86,13 +90,23 @@ export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps = {}) {
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
+
       setError(errorMessage);
     }
   };
 
   return (
-    <div className="border-gradient-figma rounded-xl min-w-[80%] md:min-w-md md:max-w-md">
+    <div className=" relative border-gradient-figma rounded-xl min-w-[80%] md:min-w-md md:max-w-md">
+      {/* Close Button */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors duration-200"
+          aria-label="Close modal"
+        >
+          <CloseIcon className="w-5 h-5" />
+        </button>
+      )}
       <div className="border-gradient-inner rounded-xl bg-card-background p-8 flex flex-col">
         <header className="flex flex-col justify-center items-center gap-1.5">
           <p className="text-sm text-dark-muted font-medium uppercase">
@@ -110,7 +124,9 @@ export default function SignUpForm({ onSwitchToSignIn }: SignUpFormProps = {}) {
           {/* Error message display */}
           {error && (
             <div className="max-w-full rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
-              <p className="max-w-full text-sm text-red-800 dark:text-red-200">{error}</p>
+              <p className="max-w-full text-sm text-red-800 dark:text-red-200">
+                {error}
+              </p>
             </div>
           )}
 

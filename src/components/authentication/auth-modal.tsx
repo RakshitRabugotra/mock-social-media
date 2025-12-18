@@ -78,15 +78,6 @@ export default function AuthModal({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full max-w-md">
-              {/* Close Button */}
-              <button
-                onClick={onClose}
-                className="absolute -top-12 right-0 z-10 flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors duration-200"
-                aria-label="Close modal"
-              >
-                <CloseIcon className="w-5 h-5" />
-              </button>
-
               {/* Form Container with slide animation */}
               <AnimatePresence mode="wait">
                 <motion.div
@@ -97,9 +88,9 @@ export default function AuthModal({
                   transition={{ duration: 0.2 }}
                 >
                   {currentView === "sign-in" ? (
-                    <SignInForm onSwitchToSignUp={() => setCurrentView("sign-up")} />
+                    <SignInForm onSwitchToSignUp={() => setCurrentView("sign-up")} onClose={onClose} />
                   ) : (
-                    <SignUpForm onSwitchToSignIn={() => setCurrentView("sign-in")} />
+                    <SignUpForm onSwitchToSignIn={() => setCurrentView("sign-in")} onClose={onClose} />
                   )}
                 </motion.div>
               </AnimatePresence>

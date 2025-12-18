@@ -1,13 +1,12 @@
 "use client";
 
 import { Skeleton } from "@/components/skeleton";
-import { mockPosts } from "@/data/mock-posts";
+
 import { PostBoxCreate, PostBoxView } from "./post-box";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { Post } from "@/models/Post";
 import { useSession } from "next-auth/react";
 import { PostsList } from "./post-list";
-import { logout } from "@/actions/auth";
 
 /**
  * Skeleton for the post section
@@ -106,16 +105,6 @@ export const PostSection = () => {
 
       {/* Posts with Suspense boundary */}
       <PostsList />
-
-      {/* Add a logout button */}
-      <div className="mt-4 w-full flex justify-center items-center">
-        <button
-          onClick={logout}
-          className="gap-2 w-full cursor-pointer bg-button-background rounded-lg max-w-xs p-3 justify-start text-destructive hover:bg-destructive hover:text-white"
-        >
-          Sign Out
-        </button>
-      </div>
     </div>
   );
 };

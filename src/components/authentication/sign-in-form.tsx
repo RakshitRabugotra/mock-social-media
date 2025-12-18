@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { EyeOpenIcon } from "@/components/icons";
+import { CloseIcon, EyeOpenIcon } from "@/components/icons";
 import { SignInFormData, signInSchema } from "@/validation/auth-schema";
 import { getSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -12,9 +12,13 @@ import { login } from "@/actions/auth";
 
 interface SignInFormProps {
   onSwitchToSignUp?: () => void;
+  onClose?: () => void;
 }
 
-export default function SignInForm({ onSwitchToSignUp }: SignInFormProps = {}) {
+export default function SignInForm({
+  onSwitchToSignUp,
+  onClose,
+}: SignInFormProps = {}) {
   // Get the query-params
   const params = useSearchParams();
   const router = useRouter();
@@ -34,24 +38,24 @@ export default function SignInForm({ onSwitchToSignUp }: SignInFormProps = {}) {
     try {
       // Clear previous errors
       setError(null);
-      
+
       const { data: loginData, error: loginError } = await login({
         email: data.email,
         password: data.password,
       });
-      
+
       // If an error occurred, display it
       if (loginError) {
         setError(loginError);
         return;
       }
-      
+
       // If still no login data, then something went wrong
       if (!loginData) {
         setError("Something went wrong. Please try again.");
         return;
       }
-      
+
       // Force refresh client session
       await getSession();
       const callback = params.get("callbackUrl");
@@ -64,15 +68,25 @@ export default function SignInForm({ onSwitchToSignUp }: SignInFormProps = {}) {
       }
     } catch (error) {
       console.error("Error while signing in: ", error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : "An unexpected error occurred. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
       setError(errorMessage);
     }
   };
 
   return (
-    <div className="border-gradient-figma rounded-xl min-w-[80%] md:min-w-md">
+    <div className="relative border-gradient-figma rounded-xl min-w-[80%] md:min-w-md">
+      {/* Close Button */}
+      {onClose && <button
+        onClick={onClose}
+        className="absolute top-3 right-3 z-10 flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors duration-200"
+        aria-label="Close modal"
+      >
+        <CloseIcon className="w-5 h-5" />
+      </button>}
+
       <div className="border-gradient-inner rounded-xl bg-card-background p-8 flex flex-col">
         <header className="flex flex-col justify-center items-center gap-1.5">
           <p className="text-sm text-dark-muted font-medium uppercase">
@@ -90,7 +104,9 @@ export default function SignInForm({ onSwitchToSignUp }: SignInFormProps = {}) {
           {/* Error message display */}
           {error && (
             <div className="max-w-full rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
-              <p className="max-w-full text-sm text-red-800 dark:text-red-200">{error}</p>
+              <p className="max-w-full text-sm text-red-800 dark:text-red-200">
+                {error}
+              </p>
             </div>
           )}
 
