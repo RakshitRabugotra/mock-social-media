@@ -18,10 +18,11 @@ const usernameSchema = z
   );
 
 export const signInSchema = z.object({
-  identifier: z
-    .email("Please enter a valid email address")
-    .min(1, "Email is required")
-    .or(usernameSchema),
+  identifier: z.union([
+    z.email("Please enter a valid email address").min(1, "Email is required"),
+    usernameSchema,
+  ]),
+
   password: z.string().min(1, "Password is required"),
 });
 
