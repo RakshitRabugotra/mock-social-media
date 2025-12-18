@@ -1,10 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
-import { useSession } from "next-auth/react";
-import AuthModal from "@/components/authentication/auth-modal";
-
 /**
  * There are certain sections in te post box.
  * - Header:
@@ -21,13 +16,19 @@ import AuthModal from "@/components/authentication/auth-modal";
  *   - Comments: (Opens a comment modal containing all the comments)
  */
 
+import { useState, useEffect, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { useSession } from "next-auth/react";
+import AuthModal from "@/components/authentication/auth-modal";
 import Avatar from "../avatar";
 import { CommentIcon } from "../icons";
 import { twMerge } from "tailwind-merge";
 import { createPostSchema } from "@/validation/post-schema";
 import { Post } from "@/models/Post";
 import { getReferenceField } from "@/lib/utils";
-import { debounce, getEmojiFromText } from "@/lib/emoji-from-text";
+import { getEmojiFromText } from "@/lib/emoji-from-text";
+import { Reference } from "@/types";
+import { User } from "@/models/User";
 
 const BasePostBox = ({
   id,
@@ -89,6 +90,14 @@ const BasePostBox = ({
   );
 };
 
+// Helper function to get owner ID from Reference
+const getOwnerId = (owner: Reference<User>): string => {
+  if (typeof owner === "string") {
+    return owner;
+  }
+  return owner._id;
+};
+
 export const PostBoxView = ({
   _id,
   editable = false,
@@ -96,10 +105,17 @@ export const PostBoxView = ({
   owner,
   createdAt,
   updatedAt,
-  feelingEmoji,
+  feelingEmoji: initialFeelingEmoji,
 }: Post & { editable?: boolean }) => {
-  // Let's use the state variable to edit it later on
+  const { data: session } = useSession();
   const [content, setContent] = useState(postContent);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [feelingEmoji, setFeelingEmoji] = useState(initialFeelingEmoji);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // If the two dates are not the same, then the post is edited
   const edited = updatedAt !== createdAt;
@@ -109,10 +125,142 @@ export const PostBoxView = ({
   const username = getReferenceField(owner, (user) => user.username, "");
   const timestamp = "just now";
 
+  // Check if current user is the owner
+  const ownerId = getOwnerId(owner);
+  const isOwner = session?.user?.id === ownerId;
+
+  // Update emoji when content changes during editing
+  useEffect(() => {
+    if (isEditing) {
+      const emoji = getEmojiFromText(content);
+      setFeelingEmoji(emoji);
+    }
+  }, [content, isEditing]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showMenu]);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setShowMenu(false);
+  };
+
+  const handleCancel = () => {
+    setContent(postContent);
+    setFeelingEmoji(initialFeelingEmoji);
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    // Validate content
+    const result = createPostSchema.safeParse({ content });
+    if (!result.success) {
+      // You could show an error message here
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/v1/posts/${_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content, feelingEmoji }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Handle error - you could show an error message here
+        console.error("Failed to update post:", data.error);
+        return;
+      }
+
+      // Success - exit edit mode
+      setIsEditing(false);
+      // Optionally, you could notify the parent component to refresh the post
+    } catch (err) {
+      console.error("Error updating post:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/v1/posts/${_id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Handle error - you could show an error message here
+        console.error("Failed to delete post:", data.error);
+        return;
+      }
+
+      // Success - close menu and confirmation
+      setShowDeleteConfirm(false);
+      setShowMenu(false);
+      // Optionally, you could notify the parent component to remove the post from the list
+      // For now, we'll reload the page to reflect the deletion
+      window.location.reload();
+    } catch (err) {
+      console.error("Error deleting post:", err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <BasePostBox
-      id={_id}
-      header={
+    <>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-card-background border-2 border-border rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium text-heading mb-4">
+              Delete Post
+            </h3>
+            <p className="text-sm text-muted mb-6">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+            <div className="flex flex-row gap-2 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-muted bg-card-content-background rounded-lg hover:bg-opacity-80 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <BasePostBox
+        id={_id}
+        header={
         <>
           {/* Left side contains avatar + username + timestamp + edited/not-edited */}
           <div className="post-box__header-left flex flex-row gap-4 items-center justify-between">
@@ -140,31 +288,79 @@ export const PostBoxView = ({
             </div>
           </div>
           {/* Right side contains actions (like edit, delete if the user is the owner of the post) */}
-          <div className="post-box__header-right group">
-            <button className="post-box__header-right-action group-hover:bg-white rounded-sm aspect-square size-5 group-hover:text-black transition-colors duration-200">
-              &middot;&middot;&middot;
-            </button>
-          </div>
+          {isOwner && (
+            <div className="post-box__header-right relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="post-box__header-right-action group-hover:bg-white rounded-sm aspect-square size-5 group-hover:text-black transition-colors duration-200"
+              >
+                &middot;&middot;&middot;
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-6 bg-card-background border-2 border-border rounded-lg shadow-lg z-10 min-w-32">
+                  <button
+                    onClick={handleEdit}
+                    className="w-full text-left px-4 py-2 text-sm text-heading hover:bg-card-content-background transition-colors duration-200"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowDeleteConfirm(true);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-card-content-background transition-colors duration-200"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </>
       }
       actions={
-        <button className="post-box__actions flex flex-row gap-2 group">
-          <CommentIcon
-            width={19}
-            height={16}
-            className="group-hover:underline group-hover:stroke-white transition-colors duration-200"
-          />
-          {/* Showing the comment count */}
-          <span className="font-medium text-xs text-muted group-hover:underline group-hover:text-white transition-colors duration-200">
-            24 Comments
-          </span>
-        </button>
+        <>
+          {isEditing ? (
+            <div className="flex flex-row gap-2">
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="post-box__actions flex flex-row gap-2 min-w-20 items-center justify-center bg-card-background border-2 border-border rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-card-content-background transition-colors duration-200"
+              >
+                <span className="font-medium text-xs text-muted">Cancel</span>
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="post-box__actions flex flex-row gap-2 min-w-20 items-center justify-center bg-button-background rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="font-medium text-xs text-white">
+                  {isSaving ? "Saving..." : "Save"}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <button className="post-box__actions flex flex-row gap-2 group">
+              <CommentIcon
+                width={19}
+                height={16}
+                className="group-hover:underline group-hover:stroke-white transition-colors duration-200"
+              />
+              {/* Showing the comment count */}
+              <span className="font-medium text-xs text-muted group-hover:underline group-hover:text-white transition-colors duration-200">
+                24 Comments
+              </span>
+            </button>
+          )}
+        </>
       }
       content={content}
       feelingEmoji={feelingEmoji}
       onContentChange={setContent}
-      editable={editable}
+      editable={isEditing || editable}
     />
+    </>
   );
 };
 
