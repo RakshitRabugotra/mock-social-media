@@ -4,7 +4,34 @@
  * Output: emoji
  */
 
-type EmotionKey = "happy" | "excited" | "sad" | "angry" | "neutral";
+type EmotionKey =
+  | "happy"
+  | "excited"
+  | "sad"
+  | "angry"
+  | "neutral"
+  | "love"
+  | "gratitude"
+  | "relaxed"
+  | "proud"
+  | "confident"
+  | "hopeful"
+  | "inspired"
+  | "nostalgic"
+  | "lonely"
+  | "anxious"
+  | "stressed"
+  | "frustrated"
+  | "confused"
+  | "surprised"
+  | "shocked"
+  | "disappointed"
+  | "embarrassed"
+  | "guilty"
+  | "bored"
+  | "sarcastic"
+  | "playful"
+  | "celebratory";
 
 interface EmotionConfig {
   emoji: string;
@@ -19,32 +46,243 @@ const EMOTION_KEYWORDS: Record<EmotionKey, EmotionConfig> = {
     emoji: "😊",
     weight: 1,
     words: [
-      "happy", "grateful", "fantastic", "delicious", "wonderful",
-      "refreshed", "enjoy", "love", "great", "amazing", "friends",
-      "fun", "laugh", "smile",
+      "happy", "joy", "cheerful", "smile", "content", "delighted",
+      "fantastic", "great", "amazing", "wonderful",
     ],
   },
+
   excited: {
     emoji: "🤩",
-    weight: 1.5,
-    words: ["excited", "thrilled", "awesome", "can't wait", "best"],
+    weight: 1.6,
+    words: [
+      "excited", "thrilled", "can't wait", "pumped",
+      "ecstatic", "hyped", "buzzing",
+    ],
   },
+
+  love: {
+    emoji: "❤️",
+    weight: 1.8,
+    words: [
+      "love", "adore", "cherish", "deeply care",
+      "my heart", "in love",
+    ],
+  },
+
+  gratitude: {
+    emoji: "🙏",
+    weight: 1.4,
+    words: [
+      "grateful", "thankful", "blessed", "appreciate",
+      "thank you", "so thankful",
+    ],
+  },
+
+  relaxed: {
+    emoji: "😌",
+    weight: 1.3,
+    words: [
+      "relaxed", "calm", "peaceful", "chill",
+      "unwinding", "at ease", "slow down",
+    ],
+  },
+
+  proud: {
+    emoji: "😤",
+    weight: 1.4,
+    words: [
+      "proud", "accomplished", "achieved", "earned",
+      "hard work paid off",
+    ],
+  },
+
+  confident: {
+    emoji: "😎",
+    weight: 1.4,
+    words: [
+      "confident", "strong", "fearless",
+      "ready", "unstoppable",
+    ],
+  },
+
+  hopeful: {
+    emoji: "🌈",
+    weight: 1.3,
+    words: [
+      "hope", "hopeful", "looking forward",
+      "better days", "optimistic",
+    ],
+  },
+
+  inspired: {
+    emoji: "✨",
+    weight: 1.4,
+    words: [
+      "inspired", "motivated", "energized",
+      "driven", "creative spark",
+    ],
+  },
+
+  nostalgic: {
+    emoji: "🥲",
+    weight: 1.3,
+    words: [
+      "nostalgic", "memories", "throwback",
+      "old days", "miss those days",
+    ],
+  },
+
   sad: {
     emoji: "😢",
     weight: 1,
-    words: ["sad", "lonely", "tired", "miss", "upset", "cry"],
+    words: [
+      "sad", "down", "heartbroken",
+      "unhappy", "blue",
+    ],
   },
+
+  lonely: {
+    emoji: "😔",
+    weight: 1.2,
+    words: [
+      "lonely", "alone", "isolated",
+      "nobody", "by myself",
+    ],
+  },
+
+  anxious: {
+    emoji: "😰",
+    weight: 1.4,
+    words: [
+      "anxious", "nervous", "worried",
+      "panic", "uneasy",
+    ],
+  },
+
+  stressed: {
+    emoji: "😩",
+    weight: 1.4,
+    words: [
+      "stressed", "overwhelmed", "burnt out",
+      "too much", "pressure",
+    ],
+  },
+
+  frustrated: {
+    emoji: "😤",
+    weight: 1.3,
+    words: [
+      "frustrated", "fed up", "irritated",
+      "annoying", "this sucks",
+    ],
+  },
+
   angry: {
     emoji: "😠",
-    weight: 1,
-    words: ["angry", "mad", "furious", "annoyed", "hate"],
+    weight: 1.4,
+    words: [
+      "angry", "mad", "furious",
+      "rage", "pissed",
+    ],
   },
-  neutral: {
+
+  confused: {
+    emoji: "😕",
+    weight: 1.2,
+    words: [
+      "confused", "lost", "unsure",
+      "don't understand", "what is happening",
+    ],
+  },
+
+  surprised: {
+    emoji: "😮",
+    weight: 1.3,
+    words: [
+      "surprised", "unexpected",
+      "didn't expect", "wow",
+    ],
+  },
+
+  shocked: {
+    emoji: "😱",
+    weight: 1.6,
+    words: [
+      "shocked", "can't believe",
+      "stunned", "speechless",
+    ],
+  },
+
+  disappointed: {
+    emoji: "😞",
+    weight: 1.3,
+    words: [
+      "disappointed", "let down",
+      "expected more", "bummed",
+    ],
+  },
+
+  embarrassed: {
+    emoji: "😳",
+    weight: 1.2,
+    words: [
+      "embarrassed", "awkward",
+      "cringe", "so awkward",
+    ],
+  },
+
+  guilty: {
+    emoji: "😬",
+    weight: 1.2,
+    words: [
+      "guilty", "my fault",
+      "regret", "shouldn't have",
+    ],
+  },
+
+  bored: {
     emoji: "😐",
+    weight: 1,
+    words: [
+      "bored", "nothing to do",
+      "meh", "dull",
+    ],
+  },
+
+  sarcastic: {
+    emoji: "🙃",
+    weight: 1.1,
+    words: [
+      "yeah right", "sure", "as if",
+      "totally", "obviously",
+    ],
+  },
+
+  playful: {
+    emoji: "😜",
+    weight: 1.2,
+    words: [
+      "just kidding", "lol", "haha",
+      "teasing", "playful",
+    ],
+  },
+
+  celebratory: {
+    emoji: "🎉",
+    weight: 1.7,
+    words: [
+      "celebrating", "party", "cheers",
+      "milestone", "we did it",
+    ],
+  },
+
+  neutral: {
+    emoji: "💭",
     weight: 0,
     words: [],
   },
 };
+
 
 /* ---------------- CORE FUNCTION ---------------- */
 
